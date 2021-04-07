@@ -11,22 +11,26 @@ h1 {
   letter-spacing: 3px;
   word-spacing: 20px;
 }
-  #resetBtn {
-    vertical-align: middle;
-    margin-left: 20px;
-  }
 
-  button.delegate {
-    margin-left: 5px;
-    margin-right: 5px;
-    padding-left: 4px;
-    padding-right: 4px;
-    display: inline-block;
-    vertical-align: middle;
-    font-size: 10pt;
-    letter-spacing: 2px;
-    text-align: center;
-  }
+hr {
+  margin: 2px;
+}
+
+#resetBtn {
+  vertical-align: middle;
+  margin-left: 20px;
+}
+
+button.delegate {
+  margin-left: 5px;
+  margin-right: 5px;
+  padding-left: 4px;
+  padding-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+  font-size: 10pt;
+  text-align: center;
+}
 
   #examples {
     max-width: 200px;
@@ -91,14 +95,11 @@ h5 {
 
   div.state {
     position: absolute;
-    display: flex;
-    min-width: 100px;
-    height: 30px;
-    line-height: 30px;
+    min-width: 56px;
+    height: 56px;
     background-color: #add;
-    padding-left: 5px;
     cursor: move;
-    border-radius: 15px;
+    border-radius: 50%;
     text-align: center;
   }
 
@@ -110,38 +111,44 @@ h5 {
       background-color: #8c8;
     }
 
-    div.plumbSource {
-      position: relative;
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      margin: 0 5px;
-      top: 5px;
-      background-color: #55a;
-      cursor: pointer;
-      border-radius: 6px;
-    }
+div.plumbSource {
+  position: relative;
+  display: none;
+  width: 20px;
+  height: 20px;
+  background-color: #55a;
+  cursor: pointer;
+  border-radius: 6px;
+}
 
-    span.stateName {
-      flex-grow: 1;
-    }
+/*span.stateName {*/
+/*  flex-grow: 1;*/
+/*}*/
 
-    input[type="checkbox"].isAccept {
-      margin: 5px;
-      height: 20px;
-    }
+.stateData {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: inherit;
+}
 
-    div.state div.delete {
-      position: absolute;
-      left: 0;
-      width: 100%;
-      height: 0;
-    }
-    div.state img.delete {
-      position: relative;
-      top: -18px;
-      cursor: pointer;
-    }
+input[type="checkbox"].isAccept {
+  margin: 5px;
+  height: 20px;
+}
+
+div.state div.delete {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 0;
+}
+
+div.state img.delete {
+  position: relative;
+  top: -94px;
+  cursor: pointer;
+}
 
 div.delete {
   width: 20px;

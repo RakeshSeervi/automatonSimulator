@@ -1,24 +1,24 @@
-var fsm = (function() {
-	var self = null;
-	var delegate = null;
-	var container = null;
-	var stateCounter = 0;
-	var saveLoadDialog = null;
+let fsm = (function () {
+	let self = null;
+	let delegate = null;
+	let container = null;
+	let stateCounter = 0;
+	let saveLoadDialog = null;
 
-	var localStorageAvailable = function () {
-		return (typeof Storage !== "undefined"  && typeof localStorage !== "undefined");
+	let localStorageAvailable = function () {
+		return (typeof Storage !== "undefined" && typeof localStorage !== "undefined");
 	};
 
-	var refreshLocalStorageInfo = function() {
+	let refreshLocalStorageInfo = function () {
 		if (localStorageAvailable()) {
 			$('#storedMachines').empty();
 			var keys = [];
-			for (var i=0; i < localStorage.length; ++i) {
+			for (var i = 0; i < localStorage.length; ++i) {
 				keys.push(localStorage.key(i));
 			}
 			keys.sort();
-			$.each(keys, function(idx, key) {
-				$('<li></li>', {'class':'machineName'})
+			$.each(keys, function (idx, key) {
+				$('<li></li>', {'class': 'machineName'})
 					.append($('<span></span>').html(key))
 					.append('<div class="delete" style="display:none;" title="Delete"><img class="delete" src="images/empty.png" /></div>')
 					.appendTo('#storedMachines');
@@ -26,7 +26,7 @@ var fsm = (function() {
 		}
 	};
 
-	var makeSaveLoadDialog = function() {
+	let makeSaveLoadDialog = function () {
 		saveLoadDialog = $('#saveLoadDialog');
 		$('#saveLoadTabs').tabs();
 		$('#saveLoadTabs textarea').height(275);
@@ -55,78 +55,85 @@ var fsm = (function() {
 					saveLoadDialog.parent().find('.ui-dialog-buttonpane button').eq(-1).trigger('click');
 			}});
 
-		$('#storedMachines').on('mouseover', 'li.machineName', function(event) {
+		$('#storedMachines').on('mouseover', 'li.machineName', function (event) {
 			$(this).find('div.delete').show();
-		}).on('mouseout', 'li.machineName', function(event) {
+		}).on('mouseout', 'li.machineName', function (event) {
 			$(this).find('div.delete').hide();
-		}).on('click', 'li.machineName div.delete', function(event) {
+		}).on('click', 'li.machineName div.delete', function (event) {
 			event.stopPropagation();
 			localStorage.removeItem($(this).closest('li.machineName').find('span').html());
 			refreshLocalStorageInfo();
-		}).on('click', 'li.machineName', function(event) { // select the machineName
+		}).on('click', 'li.machineName', function (event) { // select the machineName
 			$('#machineName').val($(this).find('span').html()).focus();
-		}).on('dblclick', 'li.machineName', function(event) {	// immediately load the machineName
+		}).on('dblclick', 'li.machineName', function (event) {	// immediately load the machineName
 			$('#machineName').val($(this).find('span').html());
 			saveLoadDialog.parent().find('.ui-dialog-buttonpane button').eq(-1).trigger('click');
 		});
 	};
 
-	var initJsPlumb = function() {
+	let initJsPlumb = function () {
 		jsPlumb.importDefaults({
 			Anchors: ["Continuous", "Continuous"],
 			ConnectorZIndex: 5,
 			ConnectionsDetachable: false,
-			Endpoint: ["Dot", {radius:2}],
-			HoverPaintStyle: {strokeStyle:"#d44", lineWidth:2},
+			Endpoint: ["Dot", {radius: 2}],
+			HoverPaintStyle: {strokeStyle: "#d44", lineWidth: 2},
 			ConnectionOverlays: [
 				["Arrow", {
 					location: 1,
 					length: 14,
 					foldback: 0.8
-					}],
-				["Label", {location:0.5}]
+				}],
+				["Label", {location: 0.5}]
 			],
-			Connector: ["StateMachine", {curviness:20}],
-			PaintStyle: {strokeStyle:'#0dd', lineWidth:2}
+			Connector: ["StateMachine", {curviness: 20}],
+			PaintStyle: {strokeStyle: '#0dd', lineWidth: 2}
 		});
 
 		jsPlumb.bind("click", connectionClicked);
 	};
 
-	var initStateEvents = function() {
+	let initStateEvents = function () {
 		// Setup handling the 'delete' divs on states
-		container.on('mouseover', 'div.state', function(event) {
+		container.on('mouseover', 'div.state', function (event) {
 			$(this).find('div.delete').show();
-		}).on('mouseout', 'div.state', function(event) {
+			$(this).find('div.plumbSource').css('display', 'inline-block');
+		}).on('mouseout', 'div.state', function (event) {
 			$(this).find('div.delete').hide();
+			$(this).find('div.plumbSource').css('display', 'none');
 		});
-		container.on('click', 'img.delete', function(event) {
+		container.on('click', 'img.delete', function (event) {
 			self.removeState($(this).closest('div.state'));
 		});
-		container.on('click', 'span.stateName', function(event) {
+		container.on('click', 'div.stateName', function (event) {
 			self.renameState($(this).closest('div.state'));
-		})
-
-		// Setup handling for accept state changes
-		container.on('change', 'input[type="checkbox"].isAccept', function(event) {
-			var cBox = $(this);
-			var stateId = cBox.closest('div.state').attr('id');
-			if (cBox.prop('checked')) {
-				delegate.fsm().addAcceptState(stateId);
-			} else {
-				delegate.fsm().removeAcceptState(stateId);
-			}
 		});
+		container.on('click', 'div.output', function (event) {
+			self.switchOutput($(this).closest('div.state'));
+		});
+		// Setup handling for accept state changes
+		// container.on('change', 'input[type="checkbox"].isAccept', function(event) {
+		// 	var cBox = $(this);
+		// 	var stateId = cBox.closest('div.state').attr('id');
+		// 	if (cBox.prop('checked')) {
+		// 		delegate.fsm().addAcceptState(stateId);
+		// 	} else {
+		// 		delegate.fsm().removeAcceptState(stateId);
+		// 	}
+		// });
 	};
 
-	var initFSMSelectors = function() {
+	let initFSMSelectors = function () {
 		// Setup the Automaton type listeners:
-		$('button.delegate').on('click', function() {
-			var newDelegate = null;
+		$('.delegate').on('click', function () {
+			let newDelegate = null;
 			switch ($(this).html()) {
-				case 'DFA': newDelegate = dfa_delegate; break;
-				case 'NFA': newDelegate = nfa_delegate; break;
-				case 'PDA': newDelegate = pda_delegate; break;
+				case 'Moore Machine':
+					newDelegate = moore_delegate;
+					break;
+				case 'Mealy Machine':
+					newDelegate = dfa_delegate;
+					break;
 			}
 			if (newDelegate !== delegate) {
 				self.setDelegate(newDelegate);
@@ -135,14 +142,11 @@ var fsm = (function() {
 			}
 		});
 
-		$('button.delegate').each(function() {
-			if ($(this).html() === 'DFA') { // Default to DFA
-				$(this).click();
-			}
-		});
+		self.setDelegate(moore_delegate);
+		$('button.delegate:nth-child(1)').prop('disabled', true);
 	};
 
-	var loadSerializedFSM = function(serializedFSM) {
+	let loadSerializedFSM = function (serializedFSM) {
 		var model = serializedFSM;
 		if (typeof serializedFSM === 'string') {
 			model = JSON.parse(serializedFSM);
@@ -150,7 +154,7 @@ var fsm = (function() {
 
 		// Load the delegate && reset everything
 		self.reset();
-		$('button.delegate').each(function() {
+		$('button.delegate').each(function () {
 			if ($(this).html() === model.type) {
 				$(this).click();
 			}
@@ -168,18 +172,20 @@ var fsm = (function() {
 					.css('left', data.left + 'px')
 					.css('top', data.top + 'px')
 					.appendTo(container);
-				jsPlumb.draggable(state, {containment:"parent"});
+				jsPlumb.draggable(state, {containment: "parent"});
 				makeStatePlumbing(state);
 			} else {
 				state = $('#start');
 			}
-			if (data.isAccept) {state.find('input.isAccept').prop('checked', true);}
+			if (data.isAccept) {
+				state.find('input.isAccept').prop('checked', true);
+			}
 		});
 
 		// Create Transitions
 		jsPlumb.unbind("jsPlumbConnection"); // unbind listener to prevent transition prompts
-		$.each(model.transitions, function(index, transition) {
-			jsPlumb.connect({source:transition.stateA, target:transition.stateB}).setLabel(transition.label);
+		$.each(model.transitions, function (index, transition) {
+			jsPlumb.connect({source: transition.stateA, target: transition.stateB}).setLabel(transition.label);
 		});
 		jsPlumb.bind("jsPlumbConnection", delegate.connectionAdded);
 
@@ -187,7 +193,7 @@ var fsm = (function() {
 		delegate.deserialize(model);
 	};
 
-	var updateStatusUI = function(status) {
+	let updateStatusUI = function (status) {
 		$('#fsmDebugInputStatus span.consumedInput').html(status.input.substring(0, status.inputIndex));
 		if (status.nextChar === '') {
 			$('#fsmDebugInputStatus span.currentInput').html(delegate.getEmptyLabel());
@@ -197,35 +203,41 @@ var fsm = (function() {
 			$('#fsmDebugInputStatus span.futureInput').html('');
 		} else {
 			$('#fsmDebugInputStatus span.currentInput').html(status.input.substr(status.inputIndex, 1));
-			$('#fsmDebugInputStatus span.futureInput').html(status.input.substring(status.inputIndex+1));
+			$('#fsmDebugInputStatus span.futureInput').html(status.input.substring(status.inputIndex + 1));
 		}
 
 	};
 
-	var connectionClicked = function(connection) {
+	let connectionClicked = function (connection) {
 		delegate.connectionClicked(connection);
 	};
 
-	var checkHashForModel = function() {
-		var hash = window.location.hash;
+	let checkHashForModel = function () {
+		let hash = window.location.hash;
 		hash = hash.replace('#', '');
 		hash = decodeURIComponent(hash);
-		if (hash) {loadSerializedFSM(hash);}
+		if (hash) {
+			loadSerializedFSM(hash);
+		}
 	};
 
-	var domReadyInit = function() {
+	let domReadyInit = function () {
 		self.setGraphContainer($('#machineGraph'));
 
-		$(window).resize(function() {
+		$(window).resize(function () {
 			container.height($(window).height() - $('#mainHolder h1').outerHeight() - $('#footer').outerHeight() - $('#bulkResultHeader').outerHeight() - $('#resultConsole').outerHeight() - 30 + 'px');
 			jsPlumb.repaintEverything();
 		});
 		$(window).resize();
 
 		// Setup handling 'enter' in test string box
-		$('#testString').keyup(function(event) {if (event.which === $.ui.keyCode.ENTER) {$('#testBtn').trigger('click');}});
+		$('#testString').keyup(function (event) {
+			if (event.which === $.ui.keyCode.ENTER) {
+				$('#testBtn').trigger('click');
+			}
+		});
 
-		container.dblclick(function(event) {
+		container.dblclick(function (event) {
 			self.addState({top: event.offsetY, left: event.offsetX});
 		});
 
@@ -234,22 +246,24 @@ var fsm = (function() {
 		initFSMSelectors();
 		makeSaveLoadDialog();
 
-		var exampleBox = $('#examples').on('change', function() {
+		// TODO
+		let exampleBox = $('#examples').on('change', function () {
 			if ($(this).val() !== '') {
 				loadSerializedFSM(fsm_examples[$(this).val()]);
 				$(this).val('');
 			}
 		});
-		$.each(fsm_examples, function(key, serializedFSM) {
-			$('<option></option>', {value:key}).html(key).appendTo(exampleBox);
+		$.each(fsm_examples, function (key, serializedFSM) {
+			$('<option></option>', {value: key}).html(key).appendTo(exampleBox);
 		});
 
 		checkHashForModel();
 	};
 
-	var makeStartState = function() {
-		var startState = makeState('start');
+	let makeStartState = function () {
+		let startState = makeState('start');
 		startState.find('div.delete').remove(); // Can't delete start state
+		container.append($('<div></div>'));
 		container.append(startState);
 		makeStatePlumbing(startState);
 	};
@@ -259,27 +273,27 @@ var fsm = (function() {
 	 * @param {string} stateId Internal ID of the new state.
 	 * @param {string} [displayId] Displayed ID of the state, by default the internal ID.
 	 */
-	var makeState = function(stateId, displayId) {
+	let makeState = function (stateId, displayId) {
 		displayId = displayId || stateId;
-		return $('<div id="' + stateId + '" class="state" data-displayid="' + displayId + '"></div>')
-			.append('<input id="' + stateId+'_isAccept' + '" type="checkbox" class="isAccept" value="true" title="Accept State" />')
-			.append('<span class="stateName">' + displayId + '</span>')
-			.append('<div class="plumbSource" title="Drag from here to create new transition">&nbsp;</div>')
-			.append('<div class="delete" style="display:none;"><img class="delete" src="images/empty.png"  title="Delete"/></div>');
+		delegate.fsm().updateOutput(stateId, 0);
+		return $('<div id="' + stateId + '" class="state" data-displayid="' + displayId + '" data-output="0"></div>')
+			.append('<div class="stateData"> <div class="stateName">' + displayId + '</div> <hr> <div class="output">0</div> </div>')
+			.append('<div class="plumbSource" title="Drag from here to create new transition" id="jsPlumb_1_3">&nbsp;</div>')
+			.append('<div class="delete" style="display:none;"><img class="delete" src="images/empty.png" title="Delete"/></div>');
 	};
 
-	var makeStatePlumbing = function(state) {
-		var source = state.find('.plumbSource');
+	let makeStatePlumbing = function (state) {
+		let source = state.find('.plumbSource');
 		jsPlumb.makeSource(source, {
 			parent: state,
 			maxConnections: 10,
-			onMaxConnections:function(info, e) {
+			onMaxConnections: function (info, e) {
 				alert("Maximum connections (" + info.maxConnections + ") reached");
 			},
 		});
 
 		jsPlumb.makeTarget(state, {
-			dropOptions: {hoverClass:'dragHover'}
+			dropOptions: {hoverClass: 'dragHover'}
 		});
 		return state;
 	};
@@ -312,14 +326,16 @@ var fsm = (function() {
 		},
 
 		addState: function(location) {
-			while ($('#s'+stateCounter).length > 0) {++stateCounter;} // Prevent duplicate states after loading
-			var state = makeState('s' + stateCounter);
+			while ($('#s' + stateCounter).length > 0) {
+				++stateCounter;
+			} // Prevent duplicate states after loading
+			let state = makeState('s' + stateCounter);
 			if (location && location.left && location.top) {
 				state.css('left', location.left + 'px')
-				.css('top', location.top + 'px');
+					.css('top', location.top + 'px');
 			}
 			container.append(state);
-			jsPlumb.draggable(state, {containment:"parent"});
+			jsPlumb.draggable(state, {containment: "parent"});
 			makeStatePlumbing(state);
 			// Do nothing to model
 			return self;
@@ -330,9 +346,9 @@ var fsm = (function() {
 		 * be renamed, it’s a no-op if the given state is the start state.
 		 * @param {jQuery} state The state to rename.
 		 */
-		renameState: function(state) {
+		renameState: function (state) {
 			if (state.attr('id') !== 'start') {
-				var newname = window.prompt('New name', state.data('displayid'));
+				let newname = window.prompt('New name', state.data('displayid'));
 				if (newname) {
 					state.data('displayid', newname);
 					state.find('.stateName').text(newname);
@@ -340,39 +356,50 @@ var fsm = (function() {
 			}
 		},
 
-		removeState: function(state) {
-			var stateId = state.attr('id');
-			jsPlumb.select({source:stateId}).detach(); // Remove all connections from UI
-			jsPlumb.select({target:stateId}).detach();
+		switchOutput: function (state) {
+			let out = parseInt(state.data('output')) ^ 1;
+			delegate.fsm().updateOutput(state.attr('id'), out);
+			state.data('output', out);
+			state.find('.output').text(state.data('output'));
+		},
+
+		removeState: function (state) {
+			let stateId = state.attr('id');
+			delegate.fsm().updateOutput(stateId, 0, true);
+			jsPlumb.select({source: stateId}).detach(); // Remove all connections from UI
+			jsPlumb.select({target: stateId}).detach();
 			state.remove(); // Remove state from UI
 			delegate.fsm().removeTransitions(stateId); // Remove all transitions from model touching this state
-			delegate.fsm().removeAcceptState(stateId); // Assure no trace is left
+			// delegate.fsm().removeAcceptState(stateId); // Assure no trace is left
 			return self;
 		},
 
-		removeConnection: function(connection) {
+		removeConnection: function (connection) {
 			jsPlumb.detach(connection);
 		},
 
 		test: function(input) {
 			if ($.type(input) === 'string') {
 				$('#testResult').html('Testing...')
-				var accepts = delegate.fsm().accepts(input);
-				$('#testResult').html(accepts ? 'Accepted' : 'Rejected').effect('highlight', {color: accepts ? '#bfb' : '#fbb'}, 1000);
+				let output = delegate.fsm().run(input);
+				$('#testResult').html('Output: ' + output).effect('highlight', {color: output !== 'Invalid input' ? '#bfb' : '#fbb'}, 1000);
 			} else {
 				$('#resultConsole').empty();
-				var makePendingEntry = function(input, type) {
-						return $('<div></div>', {'class':'pending', title:'Pending'}).append(type + ': ' + (input === '' ? '[Empty String]' : input)).appendTo('#resultConsole');
+				let makePendingEntry = function (input) {
+					return $('<div></div>', {
+						'class': 'pending',
+						title: 'Pending'
+					}).append((input === '' ? '[Empty String]' : input)).appendTo('#resultConsole');
 				};
-				var updateEntry = function(result, entry) {
+				let updateEntry = function (result, entry) {
 					entry.removeClass('pending').addClass(result).attr('title', result).append(' -- ' + result);
 				};
-				$.each(input.accept, function(index, string) {
-					updateEntry((delegate.fsm().accepts(string) ? 'Pass' : 'Fail'), makePendingEntry(string, 'Accept'));
+				$.each(input, function (index, string) {
+					updateEntry((delegate.fsm().run(string)), makePendingEntry(string));
 				});
-				$.each(input.reject, function(index, string) {
-					updateEntry((delegate.fsm().accepts(string) ? 'Fail' : 'Pass'), makePendingEntry(string, 'Reject'));
-				});
+				// $.each(input.reject, function(index, string) {
+				// 	updateEntry((delegate.fsm().run(string) ? 'Fail' : 'Pass'), makePendingEntry(string, 'Reject'));
+				// });
 				$('#bulkResultHeader').effect('highlight', {color: '#add'}, 1000);
 			}
 			return self;
@@ -390,11 +417,11 @@ var fsm = (function() {
 			} else {
 				delegate.fsm().step();
 			}
-			var status = delegate.fsm().status();
+			let status = delegate.fsm().status();
 			updateStatusUI(status);
 			delegate.updateUI();
 			if (status.status !== 'Active') {
-				$('#testResult').html(status.status === 'Accept' ? 'Accepted' : 'Rejected').effect('highlight', {color: status.status === 'Accept' ? '#bfb' : '#fbb'}, 1000);
+				$('#testResult').html('Output: ' + (status.status === 'Completed' ? delegate.fsm().getOutput(status.state) : 'Invalid input')).effect('highlight', {color: status.status === 'Completed' ? '#bfb' : '#fbb'}, 1000);
 				$('#debugBtn').prop('disabled', true);
 			}
 			return self;
