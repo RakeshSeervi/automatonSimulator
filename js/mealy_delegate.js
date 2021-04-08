@@ -1,6 +1,6 @@
-const moore_delegate = (function () {
+const mealy_delegate = (function () {
     let self = null;
-    let moore = null;
+    let mealy = null;
     let container = null;
     let dialogDiv = null;
     let dialogActiveConnection = null;
@@ -9,22 +9,26 @@ const moore_delegate = (function () {
 
     let makeDialog = function () {
         dialogDiv = $('<div></div>', {style: 'text-align:center;'});
-        $('<div></div>', {style: 'font-size:small;'}).html('Empty transitions not allowed for moore state machine <br/>Read from Input').appendTo(dialogDiv);
-        $('<span></span>', {id: 'moore_dialog_stateA', 'class': 'tranStart'}).appendTo(dialogDiv);
+        $('<div></div>', {style: 'font-size:small;'}).html('Empty transitions not allowed for mealy state machine <br/>Read from Input / Output').appendTo(dialogDiv);
+        $('<span></span>', {id: 'mealy_dialog_stateA', 'class': 'tranStart'}).appendTo(dialogDiv);
         $('<input/>', {
-            id: 'moore_dialog_readCharTxt',
+            id: 'mealy_dialog_readCharTxt',
             type: 'text',
             maxLength: 1,
             style: 'width:30px; text-align:center;'
         })
             .val('0')
-            .keypress(function (event) {
-                if (event.which === $.ui.keyCode.ENTER) {
-                    dialogDiv.parent().find('div.ui-dialog-buttonset button').eq(-1).click()
-                }
-            })
             .appendTo(dialogDiv);
-        $('<span></span>', {id: 'moore_dialog_stateB', 'class': 'tranEnd'}).appendTo(dialogDiv);
+        $('<span> / </span>').appendTo(dialogDiv);
+        $('<input/>', {
+            id: 'mealy_dialog_readOutputTxt',
+            type: 'text',
+            maxLength: 1,
+            style: 'width:30px; text-align:center;'
+        })
+            .val('0')
+            .appendTo(dialogDiv);
+        $('<span></span>', {id: 'mealy_dialog_stateB', 'class': 'tranEnd'}).appendTo(dialogDiv);
         $('body').append(dialogDiv);
 
         dialogDiv.dialog({
@@ -35,28 +39,31 @@ const moore_delegate = (function () {
             width: 350,
             modal: true,
             open: function () {
-                dialogDiv.find('input').focus().select();
+                dialogDiv.find('input')[0].focus().select();
             }
         });
     };
 
     let dialogSave = function (update) {
-        let inputChar = $('#moore_dialog_readCharTxt').val();
+        let inputChar = $('#mealy_dialog_readCharTxt').val();
+        let outputChar = $('#mealy_dialog_readOutputTxt').val();
         if (inputChar.length > 1) inputChar = inputChar[0];
-        if (inputChar.length === 0) {
-            alert("Moore state machine cannot have empty-string transition.");
+        if (inputChar.length === 0 || outputChar.length === 0) {
+            alert("Mealy state machine cannot have empty-string transition and/or no output.");
             return;
         }
-
         if (update) {
-            moore.removeTransition(dialogActiveConnection.sourceId, dialogActiveConnection.getLabel(), dialogActiveConnection.targetId);
-        } else if (moore.hasTransition(dialogActiveConnection.sourceId, inputChar)) {
+            let prev = dialogActiveConnection.getLabel().split(' / ');
+            mealy.removeTransition(dialogActiveConnection.sourceId, prev[0], dialogActiveConnection.targetId);
+            mealy.updateOutput(dialogActiveConnection.sourceId, prev[0], 0, true)
+        } else if (mealy.hasTransition(dialogActiveConnection.sourceId, inputChar)) {
             alert(dialogActiveConnection.sourceId + " already has a transition for " + inputChar);
             return;
         }
 
-        dialogActiveConnection.setLabel(inputChar);
-        moore.addTransition(dialogActiveConnection.sourceId, inputChar, dialogActiveConnection.targetId);
+        dialogActiveConnection.setLabel(inputChar + ' / ' + outputChar);
+        mealy.addTransition(dialogActiveConnection.sourceId, inputChar, dialogActiveConnection.targetId);
+        mealy.updateOutput(dialogActiveConnection.sourceId, inputChar, outputChar);
         dialogDiv.dialog("close");
     };
 
@@ -67,7 +74,9 @@ const moore_delegate = (function () {
     };
 
     let dialogDelete = function () {
-        moore.removeTransition(dialogActiveConnection.sourceId, dialogActiveConnection.getLabel(), dialogActiveConnection.targetId);
+        let inputChar = dialogActiveConnection.getLabel().split(' / ')[0];
+        mealy.removeTransition(dialogActiveConnection.sourceId, inputChar, dialogActiveConnection.targetId);
+        mealy.updateOutput(dialogActiveConnection.sourceId, inputChar, 0, true);
         fsm.removeConnection(dialogActiveConnection);
         dialogDiv.dialog("close");
     };
@@ -77,7 +86,7 @@ const moore_delegate = (function () {
     }
 
     let updateUIForDebug = function () {
-        let status = moore.status();
+        let status = mealy.status();
 
         $('.current').removeClass('current');
         if (statusConnector) statusConnector.setPaintStyle(jsPlumb.Defaults.PaintStyle);
@@ -95,13 +104,13 @@ const moore_delegate = (function () {
     return {
         init: function () {
             self = this;
-            moore = new Moore();
+            mealy = new Mealy();
             makeDialog();
             return self;
         },
 
         type: function () {
-            return 'moore';
+            return 'mealy';
         },
 
         setContainer: function (newContainer) {
@@ -110,18 +119,18 @@ const moore_delegate = (function () {
         },
 
         reset: function () {
-            moore = new Moore();
+            mealy = new Mealy();
             return self;
         },
 
         fsm: function () {
-            return moore;
+            return mealy;
         },
 
         connectionAdded: function (info) {
             dialogActiveConnection = info.connection;
-            $('#moore_dialog_stateA').html(dialogActiveConnection.sourceId + '&nbsp;');
-            $('#moore_dialog_stateB').html('&nbsp;' + dialogActiveConnection.targetId);
+            $('#mealy_dialog_stateA').html(dialogActiveConnection.sourceId + '&nbsp;');
+            $('#mealy_dialog_stateB').html('&nbsp;' + dialogActiveConnection.targetId);
             dialogDiv.dialog('option', 'buttons', {
                 Cancel: function () {
                     dialogCancel(false);
@@ -134,7 +143,9 @@ const moore_delegate = (function () {
 
         connectionClicked: function (connection) {
             dialogActiveConnection = connection;
-            $('#moore_dialog_readCharTxt').val(dialogActiveConnection.getLabel());
+            let cur = dialogActiveConnection.getLabel().split(' / ');
+            $('#mealy_dialog_readCharTxt').val(cur[0]);
+            $('#mealy_dialog_readOutputTxt').val(cur[1]);
             dialogDiv.dialog('option', 'buttons', {
                 Cancel: function () {
                     dialogCancel(true);

@@ -97,10 +97,10 @@ let fsm = (function () {
 		// Setup handling the 'delete' divs on states
 		container.on('mouseover', 'div.state', function (event) {
 			$(this).find('div.delete').show();
-			$(this).find('div.plumbSource').css('display', 'inline-block');
+			$(this).find('.displayOnHover').css('display', 'inline-block');
 		}).on('mouseout', 'div.state', function (event) {
 			$(this).find('div.delete').hide();
-			$(this).find('div.plumbSource').css('display', 'none');
+			$(this).find('.displayOnHover').css('display', 'none');
 		});
 		container.on('click', 'img.delete', function (event) {
 			self.removeState($(this).closest('div.state'));
@@ -132,7 +132,7 @@ let fsm = (function () {
 					newDelegate = moore_delegate;
 					break;
 				case 'Mealy Machine':
-					newDelegate = dfa_delegate;
+					newDelegate = mealy_delegate;
 					break;
 			}
 			if (newDelegate !== delegate) {
@@ -275,11 +275,17 @@ let fsm = (function () {
 	 */
 	let makeState = function (stateId, displayId) {
 		displayId = displayId || stateId;
-		delegate.fsm().updateOutput(stateId, 0);
-		return $('<div id="' + stateId + '" class="state" data-displayid="' + displayId + '" data-output="0"></div>')
-			.append('<div class="stateData"> <div class="stateName">' + displayId + '</div> <hr> <div class="output">0</div> </div>')
-			.append('<div class="plumbSource" title="Drag from here to create new transition" id="jsPlumb_1_3">&nbsp;</div>')
-			.append('<div class="delete" style="display:none;"><img class="delete" src="images/empty.png" title="Delete"/></div>');
+		if (delegate.type() === 'moore') {
+			delegate.fsm().updateOutput(stateId, 0);
+			return $('<div id="' + stateId + '" class="state moore" data-displayid="' + displayId + '" data-output="0"></div>')
+				.append('<div class="stateData"> <div class="stateName">' + displayId + '</div> <hr> <div class="output">0</div> </div>')
+				.append('<div class="plumbSource displayOnHover" title="Drag from here to create new transition">&nbsp;</div>')
+				.append('<div class="delete" style="display:none;"><img class="delete" src="images/empty.png" title="Delete"/></div>');
+		} else
+			return $('<div id="' + stateId + '" class="state mealy" data-displayid="' + displayId + '"></div>')
+				.append('<span class="stateName">' + displayId + '</span>')
+				.append('<div class="plumbSource" title="Drag from here to create new transition">&nbsp;</div>')
+				.append('<div class="delete" style="display:none;"><img class="delete" src="images/empty.png"  title="Delete"/></div>');
 	};
 
 	let makeStatePlumbing = function (state) {
@@ -365,7 +371,7 @@ let fsm = (function () {
 
 		removeState: function (state) {
 			let stateId = state.attr('id');
-			delegate.fsm().updateOutput(stateId, 0, true);
+			if (delegate.type() === 'moore') delegate.fsm().updateOutput(stateId, 0, true);
 			jsPlumb.select({source: stateId}).detach(); // Remove all connections from UI
 			jsPlumb.select({target: stateId}).detach();
 			state.remove(); // Remove state from UI
@@ -378,7 +384,7 @@ let fsm = (function () {
 			jsPlumb.detach(connection);
 		},
 
-		test: function(input) {
+		test: function (input) {
 			if ($.type(input) === 'string') {
 				$('#testResult').html('Testing...')
 				let output = delegate.fsm().run(input);

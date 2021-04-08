@@ -1,4 +1,4 @@
-function Moore(useDefaults) {
+function Mealy(useDefaults) {
     "use strict";
     this.transitions = {};
     this.startState = useDefaults ? 'start' : null;
@@ -10,52 +10,53 @@ function Moore(useDefaults) {
         state: null,
         inputIndex: 0,
         status: null,
+        output: null
     };
 }
 
 $(function () {
     "use strict";
 
-    Moore.prototype.transition = function (state, character) {
+    Mealy.prototype.transition = function (state, character) {
         return (this.transitions[state]) ? this.transitions[state][character] : null
     };
 
-    Moore.prototype.deserialize = function (json) {
+    Mealy.prototype.deserialize = function (json) {
         this.transitions = json.transitions;
         this.startState = json.startState;
         return this;
     };
 
-    Moore.prototype.serialize = function () {
+    Mealy.prototype.serialize = function () {
         return {
             transitions: this.transitions,
             startState: this.startState
         }
     };
 
-    Moore.prototype.loadFromString = function (JSONdescription) {
+    Mealy.prototype.loadFromString = function (JSONdescription) {
         let parsedJSON = JSON.parse(JSONdescription);
         return this.deserialize(parsedJSON);
     };
 
-    Moore.prototype.saveToString = function () {
+    Mealy.prototype.saveToString = function () {
         return JSON.stringify(this.serialize());
     };
 
-    Moore.prototype.addTransition = function (stateA, character, stateB) {
+    Mealy.prototype.addTransition = function (stateA, character, stateB) {
         if (!this.transitions[stateA])
             this.transitions[stateA] = {};
         this.transitions[stateA][character] = stateB;
         return this;
     };
 
-    Moore.prototype.hasTransition = function (state, character) {
+    Mealy.prototype.hasTransition = function (state, character) {
         if (this.transitions[state])
             return !!this.transitions[state][character];
         return false;
     };
 
-    Moore.prototype.removeTransitions = function (state) {
+    Mealy.prototype.removeTransitions = function (state) {
         delete this.transitions[state];
         let self = this;
         $.each(self.transitions, function (stateA, sTrans) {
@@ -68,33 +69,37 @@ $(function () {
         return this;
     };
 
-    Moore.prototype.removeTransition = function (stateA, character) {
+    Mealy.prototype.removeTransition = function (stateA, character) {
         if (this.transitions[stateA]) delete this.transitions[stateA][character];
         return this;
     };
 
-    Moore.prototype.setStartState = function (state) {
+    Mealy.prototype.setStartState = function (state) {
         this.startState = state;
         return this;
     };
 
-    Moore.prototype.step = function () {
+    Mealy.prototype.step = function () {
+        let inputChar = this.processor.input.substr(this.processor.inputIndex, 1);
+        let prev = this.processor.state;
         if (!(this.processor.state = this.transition(this.processor.state, this.processor.input.substr(this.processor.inputIndex++, 1)))) this.processor.status = 'Reject';
-        if (this.processor.status !== 'Reject' && this.processor.inputIndex === this.processor.inputLength) this.processor.status = 'Completed';
+        else if (this.processor.status !== 'Reject' && this.processor.inputIndex === this.processor.inputLength) this.processor.status = 'Completed';
+        if (this.processor.state) this.processor.output = this.output[prev][inputChar];
         return this.processor.status;
     };
 
-    Moore.prototype.status = function () {
+    Mealy.prototype.status = function () {
         return {
             state: this.processor.state,
             input: this.processor.input,
             inputIndex: this.processor.inputIndex,
             nextChar: this.processor.input.substr(this.processor.inputIndex, 1),
-            status: this.processor.status
+            status: this.processor.status,
+            output: this.processor.output
         };
     };
 
-    Moore.prototype.stepInit = function (input) {
+    Mealy.prototype.stepInit = function (input) {
         this.processor.input = input;
         this.processor.inputLength = input.length;
         this.processor.inputIndex = 0;
@@ -103,23 +108,26 @@ $(function () {
         return this.processor.status;
     };
 
-    Moore.prototype.run = function (input) {
+    Mealy.prototype.run = function (input) {
         let _status = this.stepInit(input);
         while (_status === 'Active') _status = this.step();
-        return this.processor.state ? this.output[this.processor.state] : 'Invalid input';
+        return this.processor.status === 'Completed' ? this.processor.output : 'Invalid input';
     };
 
-    Moore.prototype.updateOutput = function (state, out, del = false) {
+    Mealy.prototype.updateOutput = function (state, character, out = 0, del = false) {
         if (del) {
-            if (this.output[state])
-                delete this.output[state];
-        } else
-            this.output[state] = out;
+            if (this.output[state] && this.output[state][character])
+                delete this.output[state][character];
+        } else {
+            if (!this.output[state])
+                this.output[state] = {};
+            this.output[state][character] = out;
+        }
         return this;
     }
 
-    Moore.prototype.getOutput = function (state) {
-        return this.output[state];
+    Mealy.prototype.getOutput = function (state) {
+        return this.processor.output;
     }
 
     // TODO: runTests

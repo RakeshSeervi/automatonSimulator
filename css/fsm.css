@@ -93,23 +93,31 @@ h5 {
     cursor: default;
   }
 
-  div.state {
-    position: absolute;
-    min-width: 56px;
-    height: 56px;
-    background-color: #add;
-    cursor: move;
-    border-radius: 50%;
-    text-align: center;
-  }
+div.state {
+  position: absolute;
+  min-width: 56px;
+  height: 56px;
+  background-color: #add;
+  cursor: move;
+  border-radius: 50%;
+  text-align: center;
+}
 
-    div.dragHover {
-      background-color: #aff;
-    }
+div.mealy {
+  display: flex;
+  min-width: 100px;
+  height: 30px;
+  line-height: 30px;
+  border-radius: 15px;
+}
 
-    div.current {
-      background-color: #8c8;
-    }
+div.dragHover {
+  background-color: #aff;
+}
+
+div.current {
+  background-color: #8c8;
+}
 
 div.plumbSource {
   position: relative;
@@ -121,9 +129,19 @@ div.plumbSource {
   border-radius: 6px;
 }
 
-/*span.stateName {*/
-/*  flex-grow: 1;*/
-/*}*/
+div.mealy div.plumbSource {
+  display: inline-block;
+  margin: 0 5px;
+  top: 5px;
+}
+
+div.mealy span.stateName {
+  flex-grow: 1;
+}
+
+div.mealy img.delete {
+  top: -18px !important;
+}
 
 .stateData {
   display: flex;
