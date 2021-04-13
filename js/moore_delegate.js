@@ -134,6 +134,8 @@ const moore_delegate = (function () {
 
         connectionClicked: function (connection) {
             dialogActiveConnection = connection;
+            $('#moore_dialog_stateA').html(dialogActiveConnection.sourceId + '&nbsp;');
+            $('#moore_dialog_stateB').html('&nbsp;' + dialogActiveConnection.targetId);
             $('#moore_dialog_readCharTxt').val(dialogActiveConnection.getLabel());
             dialogDiv.dialog('option', 'buttons', {
                 Cancel: function () {

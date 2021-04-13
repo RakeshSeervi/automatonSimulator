@@ -143,6 +143,8 @@ const mealy_delegate = (function () {
 
         connectionClicked: function (connection) {
             dialogActiveConnection = connection;
+            $('#mealy_dialog_stateA').html(dialogActiveConnection.sourceId + '&nbsp;');
+            $('#mealy_dialog_stateB').html('&nbsp;' + dialogActiveConnection.targetId);
             let cur = dialogActiveConnection.getLabel().split(' / ');
             $('#mealy_dialog_readCharTxt').val(cur[0]);
             $('#mealy_dialog_readOutputTxt').val(cur[1]);
